@@ -1,64 +1,98 @@
-export type Mood = 'stuck' | 'focus' | 'short'
+// Shared types, check-in options and page copy. Mission content lives in missions.ts,
+// and the rules that pick a mission live in recommend.ts.
+
+export type Mood = 'low' | 'overwhelmed' | 'focus' | 'confident'
 export type Focus = 'code' | 'apt' | 'int'
 export type Time = '5' | '15' | '25'
+export type Destination = 'explore' | 'practise' | 'interview'
+
 export interface Selection { mood: Mood; focus: Focus; time: Time }
 
-interface Opt<T> { id: T; label: string }
-export const OPTIONS: { mood: Opt<Mood>[]; focus: Opt<Focus>[]; time: Opt<Time>[] } = {
-  mood: [
-    { id: 'stuck', label: 'A bit stuck' },
-    { id: 'focus', label: 'Ready to focus' },
-    { id: 'short', label: 'Short on time' },
-  ],
-  focus: [
-    { id: 'code', label: 'Coding' },
-    { id: 'apt', label: 'Aptitude' },
-    { id: 'int', label: 'Interview confidence' },
-  ],
-  time: [
-    { id: '5', label: '5 minutes' },
-    { id: '15', label: '15 minutes' },
-    { id: '25', label: '25 minutes' },
-  ],
+export interface Option<T extends string> { id: T; label: string; hint: string }
+
+export const MOODS: Option<Mood>[] = [
+  { id: 'low', label: 'Low energy', hint: 'Something light with no setup' },
+  { id: 'overwhelmed', label: 'A little overwhelmed', hint: 'One small, bounded task' },
+  { id: 'focus', label: 'Ready to focus', hint: 'A bit more depth' },
+  { id: 'confident', label: 'Feeling confident', hint: 'A gentle stretch' },
+]
+
+export const FOCUSES: Option<Focus>[] = [
+  { id: 'code', label: 'Coding', hint: 'Loops, arrays, small problems' },
+  { id: 'apt', label: 'Aptitude', hint: 'Percentages, series, ratios' },
+  { id: 'int', label: 'Interview confidence', hint: 'Intros, project stories' },
+]
+
+export const TIMES: Option<Time>[] = [
+  { id: '5', label: '5 minutes', hint: 'A quick win' },
+  { id: '15', label: '15 minutes', hint: 'One focused task' },
+  { id: '25', label: '25 minutes', hint: 'Room to go deeper' },
+]
+
+export const label = {
+  mood: (m: Mood) => MOODS.find((o) => o.id === m)?.label ?? m,
+  focus: (f: Focus) => FOCUSES.find((o) => o.id === f)?.label ?? f,
 }
 
-// Fictional sample missions: [title, description]
-export const MISSIONS: Record<Focus, Record<Time, [string, string]>> = {
-  code: {
-    '5': ['Trace a loop by hand', 'Read a six-line loop. Write down each variable’s value after every pass.'],
-    '15': ['Warm up with one array problem', 'Find the largest number in a short list. Write it, then explain it in one sentence.'],
-    '25': ['Solve it, then tidy it', 'Solve a sample string problem, rename your variables for clarity, and note one edge case.'],
-  },
-  apt: {
-    '5': ['Percentages without a calculator', 'Work three sample percentage-change questions in your head, then check them.'],
-    '15': ['Spot the pattern', 'Try five sample number series. Note which pattern type you recognised first.'],
-    '25': ['A mixed set, no timer', 'Do eight mixed sample questions with no clock. Mark the ones you’d skip first next time.'],
-  },
-  int: {
-    '5': ['Say your intro aloud', 'Three sentences: who you are, something you’ve built or learned, and what you want next.'],
-    '15': ['Draft one project story', 'Write what problem you faced, what you did, and one thing you’d change.'],
-    '25': ['Record a practice answer', 'Answer “Tell me about a challenge” aloud, listen back, and note one thing to keep and one to tweak.'],
-  },
+// The three compass destinations. Each practice focus has a home destination,
+// which is what the compass needle points to.
+export interface DestinationInfo {
+  id: Destination
+  name: string
+  focus: Focus
+  caption: string
+  goal: string
+  example: string
+  whenUseful: string
 }
 
-export const TIPS: Record<Mood, string> = {
-  stuck: 'Since you feel a bit stuck, this starts with something concrete. Begin with just the first line.',
-  focus: 'You’re ready to focus, so this one has a little more depth to it.',
-  short: 'You’re short on time, so there’s nothing to set up and one clear finish line.',
-}
+export const DESTINATIONS: DestinationInfo[] = [
+  {
+    id: 'explore',
+    name: 'Explore',
+    focus: 'apt',
+    caption: 'Aptitude warm-ups',
+    goal: 'Get familiar with the kinds of questions placement tests ask.',
+    example: 'Try three sample number series and name each rule in words.',
+    whenUseful: 'Useful when you are not sure where to begin. Feedback is quick and nothing is at stake.',
+  },
+  {
+    id: 'practise',
+    name: 'Practise',
+    focus: 'code',
+    caption: 'Coding reps',
+    goal: 'Make small coding problems feel routine instead of scary.',
+    example: 'Write one short array function, then explain it in a sentence.',
+    whenUseful: 'Useful when you want steady repetition. Small problems, done often, add up.',
+  },
+  {
+    id: 'interview',
+    name: 'Interview',
+    focus: 'int',
+    caption: 'Speaking practice',
+    goal: 'Get comfortable talking about yourself and your work out loud.',
+    example: 'Say a three-sentence introduction aloud, then change one line.',
+    whenUseful: 'Useful at any stage. You can practise speaking before you feel ready.',
+  },
+]
 
-export const JOURNEY: { name: string; goal: string; mission: string }[] = [
-  { name: 'Explore', goal: 'Learn what roles exist', mission: 'Read two sample role descriptions and note what sounds interesting. (5 min)' },
-  { name: 'Build basics', goal: 'Feel steady with core ideas', mission: 'Write one small function from scratch without looking anything up. (15 min)' },
-  { name: 'Practise', goal: 'Make practice a habit', mission: 'Do one sample mixed set, then jot down what felt easy. (25 min)' },
-  { name: 'Prepare to apply', goal: 'Get your story ready', mission: 'Draft a three-line summary of your best project. (15 min)' },
-  { name: 'Reflect', goal: 'Notice what you’ve learned', mission: 'Write one thing you’re proud of and one thing to try next. (5 min)' },
+export const destinationFor = (f: Focus): DestinationInfo =>
+  DESTINATIONS.find((d) => d.focus === f) ?? DESTINATIONS[0]
+
+export const JOURNEY_STEPS: { title: string; text: string }[] = [
+  { title: 'Check in', text: 'Say how today feels. Low energy is a fine starting point.' },
+  { title: 'Choose a focus', text: 'Coding, aptitude or interview confidence, plus the time you have.' },
+  { title: 'Get one mission', text: 'One task, a clear finish line, and a note on why it fits.' },
+  { title: 'Practise', text: 'Do just that. Ask for something easier if it feels like too much.' },
+  { title: 'Reflect', text: 'Mark it done and read one suggestion for what could follow.' },
+  { title: 'Choose what’s next', text: 'Another mission, a different focus, or stop for the day.' },
 ]
 
 export const FAQ: [string, string][] = [
-  ['Is this a real product?', 'No. It’s a frontend demo. There is no backend, no AI and no real placement data. Suggestions come from a small set of sample missions written for this page.'],
-  ['Do I need to log in?', 'No. There are no accounts. Nothing leaves your device.'],
-  ['Is my progress real?', 'It’s demo progress. Completed missions are saved in your browser’s local storage, so clearing site data or pressing Reset demo removes them.'],
+  ['Is this a real product?', 'No. It’s a frontend demo built for a hackathon. There is no backend, no AI and no real placement data. Suggestions come from 27 sample missions written for this page.'],
+  ['How are missions chosen?', 'By a short, fixed rule. Your focus and time pick a set of three sample missions (gentle, steady, stretch). Your mood picks which of the three to suggest first. “Make it easier” and “Try another” move between them. It is not a prediction about you.'],
+  ['Does my mood get saved?', 'No. Your mood only shapes the suggestion on screen and is forgotten when you leave. Only your last focus, time and completed sample missions are kept, in this browser.'],
+  ['Is my progress real?', 'It’s demo progress. Completed missions are saved in this browser’s local storage, so clearing site data or pressing “Reset demo” removes them.'],
+  ['Do I need to log in?', 'No. There are no accounts and nothing leaves your device.'],
   ['Who is it for?', 'College students preparing for internships, campus placements and entry-level roles, especially on days when they don’t know where to start.'],
-  ['How are missions chosen?', 'Your mood, focus area and time map to a sample mission and a short note explaining the match. It’s a simple rule, not a prediction.'],
 ]

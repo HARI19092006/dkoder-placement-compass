@@ -1,56 +1,138 @@
-import { useEffect, useState } from 'react'
-import { OPTIONS, type Selection } from './data'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FOCUSES, TIMES, type Focus, type Mood, type Selection, type Time } from './data'
+import { MISSION_BY_ID, MISSIONS, type Mission } from './missions'
+import { anotherThan, easierThan, recommend, type Reason, type Recommendation } from './recommend'
 
-const KEY = 'dkoder-demo-v1'
-const DEFAULT: Selection = { mood: 'stuck', focus: 'code', time: '15' }
+const KEY = 'dkoder-demo-v2'
+const OLD_KEY = 'dkoder-demo-v1'
+const DEFAULT_FOCUS: Focus = 'code'
+const DEFAULT_TIME: Time = '15'
 
-interface State { sel: Selection; done: Record<string, true> }
+export type Phase = 'active' | 'done' | 'stopped'
 
-function valid<K extends keyof Selection>(k: K, v: unknown): v is Selection[K] {
-  return typeof v === 'string' && OPTIONS[k].some((o) => o.id === v)
+// Mood is deliberately kept in memory only. It is never written to storage.
+export interface Choices { mood: Mood | null; focus: Focus; time: Time }
+
+interface State {
+  sel: Choices
+  done: Record<string, true>
+  pinned: { id: string; reason: Reason } | null
+  phase: Phase
 }
 
-// Reads localStorage defensively: bad JSON or odd shapes fall back to defaults.
-function load(): State {
-  const state: State = { sel: { ...DEFAULT }, done: {} }
+const isFocus = (v: unknown): v is Focus => typeof v === 'string' && FOCUSES.some((o) => o.id === v)
+const isTime = (v: unknown): v is Time => typeof v === 'string' && TIMES.some((o) => o.id === v)
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+
+function readJSON(key: string): unknown {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    if (raw && typeof raw === 'object') {
-      const s = raw.sel
-      if (s && typeof s === 'object') {
-        if (valid('mood', s.mood)) state.sel.mood = s.mood
-        if (valid('focus', s.focus)) state.sel.focus = s.focus
-        if (valid('time', s.time)) state.sel.time = s.time
-      }
-      const d = raw.done
-      if (d && typeof d === 'object' && !Array.isArray(d)) {
-        for (const k of Object.keys(d)) {
-          if (/^(code|apt|int)(5|15|25)$/.test(k) && d[k] === true) state.done[k] = true
-        }
+    return JSON.parse(localStorage.getItem(key) ?? 'null')
+  } catch {
+    return null
+  }
+}
+
+// Reads saved demo progress defensively. Anything malformed falls back to defaults.
+function load(): State {
+  const state: State = { sel: { mood: null, focus: DEFAULT_FOCUS, time: DEFAULT_TIME }, done: {}, pinned: null, phase: 'active' }
+
+  const raw = readJSON(KEY)
+  if (isRecord(raw)) {
+    if (isFocus(raw.focus)) state.sel.focus = raw.focus
+    if (isTime(raw.time)) state.sel.time = raw.time
+    if (isRecord(raw.done)) {
+      for (const [k, v] of Object.entries(raw.done)) if (v === true && MISSION_BY_ID.has(k)) state.done[k] = true
+    }
+    return state
+  }
+
+  // Migrate progress saved by the first version of the demo (one mission per focus/time).
+  const old = readJSON(OLD_KEY)
+  if (isRecord(old)) {
+    if (isRecord(old.sel)) {
+      if (isFocus(old.sel.focus)) state.sel.focus = old.sel.focus
+      if (isTime(old.sel.time)) state.sel.time = old.sel.time
+    }
+    if (isRecord(old.done)) {
+      for (const [k, v] of Object.entries(old.done)) {
+        const match = /^(code|apt|int)(5|15|25)$/.exec(k)
+        const id = match ? `${match[1]}-${match[2]}-2` : ''
+        if (v === true && MISSION_BY_ID.has(id)) state.done[id] = true
       }
     }
-  } catch {
-    /* ignore: storage blocked or corrupted */
   }
+  try { localStorage.removeItem(OLD_KEY) } catch { /* storage unavailable */ }
   return state
 }
 
-export function useDemo() {
+export interface Demo {
+  sel: Choices
+  rec: Recommendation | null
+  phase: Phase
+  done: Readonly<Record<string, true>>
+  doneCount: number
+  total: number
+  doneFor: (focus: Focus) => number
+  easier: Mission | null
+  setChoice: <K extends keyof Selection>(k: K, v: Selection[K]) => void
+  tryEasier: () => void
+  tryAnother: () => void
+  complete: () => void
+  stop: () => void
+  resume: () => void
+  reset: () => void
+}
+
+export function useDemo(): Demo {
   const [state, setState] = useState<State>(load)
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)) } catch { /* ignore */ }
-  }, [state])
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ focus: state.sel.focus, time: state.sel.time, done: state.done }))
+    } catch { /* storage unavailable: progress lives for this visit only */ }
+  }, [state.sel.focus, state.sel.time, state.done])
 
-  const missionId = state.sel.focus + state.sel.time
+  const { sel, done, pinned, phase } = state
+
+  const rec = useMemo<Recommendation | null>(() => {
+    if (!sel.mood) return null
+    const pinnedMission = pinned ? MISSION_BY_ID.get(pinned.id) : undefined
+    if (pinned && pinnedMission && pinnedMission.focus === sel.focus && pinnedMission.time === sel.time) {
+      return { mission: pinnedMission, reason: pinned.reason }
+    }
+    return recommend({ mood: sel.mood, focus: sel.focus, time: sel.time }, done)
+  }, [sel, done, pinned])
+
+  const setChoice = useCallback(<K extends keyof Selection>(k: K, v: Selection[K]) => {
+    // Any change to the check-in gives a fresh recommendation.
+    setState((s) => ({ ...s, sel: { ...s.sel, [k]: v }, pinned: null, phase: 'active' }))
+  }, [])
+
+  const pin = (mission: Mission, reason: Reason) =>
+    setState((s) => ({ ...s, pinned: { id: mission.id, reason }, phase: 'active' }))
+
+  const easier = rec ? easierThan(rec.mission) : null
+
   return {
-    sel: state.sel,
-    missionId,
-    isDone: !!state.done[missionId],
-    doneCount: Object.keys(state.done).length,
-    setChoice: <K extends keyof Selection>(k: K, v: Selection[K]) =>
-      setState((s) => ({ ...s, sel: { ...s.sel, [k]: v } })),
-    complete: () => setState((s) => ({ ...s, done: { ...s.done, [s.sel.focus + s.sel.time]: true } })),
-    reset: () => setState({ sel: { ...DEFAULT }, done: {} }),
+    sel,
+    rec,
+    phase,
+    done,
+    doneCount: Object.keys(done).length,
+    total: MISSIONS.length,
+    doneFor: (focus) => MISSIONS.filter((x) => x.focus === focus && done[x.id]).length,
+    easier,
+    setChoice,
+    tryEasier: () => { if (easier) pin(easier, 'easier') },
+    tryAnother: () => { if (rec) pin(anotherThan(rec.mission, done), 'another') },
+    complete: () => {
+      if (!rec) return
+      const { mission, reason } = rec
+      // Keep the finished mission on screen so the acknowledgement refers to it.
+      setState((s) => ({ ...s, done: { ...s.done, [mission.id]: true }, pinned: { id: mission.id, reason }, phase: 'done' }))
+    },
+    stop: () => setState((s) => ({ ...s, phase: 'stopped' })),
+    resume: () => setState((s) => ({ ...s, pinned: null, phase: 'active' })),
+    reset: () => setState({ sel: { mood: null, focus: DEFAULT_FOCUS, time: DEFAULT_TIME }, done: {}, pinned: null, phase: 'active' }),
   }
 }

@@ -1,0 +1,41 @@
+:root:not([data-theme="dark"]) .panel:has(.journey){background:var(--wp)}
+
+.panel.will-reveal:not(.is-revealed) :is(.checkin>.wrap,.how-stage,.how:not(.how-story)>.wrap,.journey>.wrap,.principles>.wrap,.faq-sec>.wrap){opacity:0}
+.panel.will-reveal.is-revealed :is(.checkin>.wrap,.how-stage,.how:not(.how-story)>.wrap,.journey>.wrap,.principles>.wrap,.faq-sec>.wrap){animation:rv-body 1.1s cubic-bezier(.2,1.12,.36,1) backwards}
+
+.panel.will-reveal.is-revealed .checkin-grid>div:first-child{--rd:.18s}
+.panel.will-reveal.is-revealed .checkin .mission-card{--rd:.34s}
+.panel.will-reveal.is-revealed .how-left{--rd:.12s}
+.panel.will-reveal.is-revealed .how-right{--rd:.28s}
+.panel.will-reveal.is-revealed .loop-wrap{--rd:.2s}
+.panel.will-reveal.is-revealed .journey-grid{--rd:.24s}
+.panel.will-reveal.is-revealed .journey .note{--rd:.4s}
+.panel.will-reveal.is-revealed .pr-list li:nth-child(1){--rd:.16s}
+.panel.will-reveal.is-revealed .pr-list li:nth-child(2){--rd:.26s}
+.panel.will-reveal.is-revealed .pr-list li:nth-child(3){--rd:.36s}
+.panel.will-reveal.is-revealed .support{--rd:.46s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(1){--rd:.14s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(2){--rd:.2s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(3){--rd:.26s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(4){--rd:.32s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(5){--rd:.38s}
+.panel.will-reveal.is-revealed .faq-item:nth-child(6){--rd:.44s}
+
+.panel.will-reveal.is-revealed :is(.checkin-grid>div:first-child,.checkin .mission-card,.how-left,.how-right,.loop-wrap,.journey-grid,.journey .note,.pr-list li,.support,.faq-item){animation:rv-item .95s cubic-bezier(.2,1.15,.36,1) var(--rd,0s) backwards}
+
+@keyframes rv-body{from{opacity:0;translate:0 70px}to{opacity:1;translate:0 0}}
+@keyframes rv-item{from{opacity:0;translate:0 36px;scale:.95}to{opacity:1;translate:0 0;scale:1}}
+
+:root:not([data-theme="dark"]) .bar{-webkit-backdrop-filter:none;backdrop-filter:none}
+
+:root:not([data-theme="dark"]) .how-sticky::after,:root:not([data-theme="dark"]) .principles::after,:root:not([data-theme="dark"]) .faq-sec::after{background:radial-gradient(circle 46px at right 150px bottom 150px,rgba(255,255,255,.7),rgba(255,255,255,0)),radial-gradient(circle 190px at right 40px bottom 20px,#9D6BFF 0%,#7C3AED 40%,#4C1D95 74%,rgba(59,15,140,.5) 90%,rgba(59,15,140,0) 100%),radial-gradient(circle 22px at 4% 22%,rgba(255,255,255,.85),rgba(255,255,255,0)),radial-gradient(circle 60px at 3% 26%,#FFF1A8 0%,#FFD23F 40%,#FFB000 74%,rgba(230,138,0,0) 100%),radial-gradient(ellipse 62% 42% at 72% 112%,rgba(255,200,0,0) 90%,rgba(255,226,140,.75) 93%,rgba(255,200,0,0) 96%)}
+.how-dial{contain:layout paint}
+.how-ring,.how-progress,.how-traveler,.map-lines{will-change:transform}
+.panel:is(.is-covered,.is-away,.is-leaving) :is(.sphere-sm,.spark,.shoot-2,.compass-halo,.dest,.stop,.orb-ring,.map-edge,.close-orbit),.panel:is(.is-covered,.is-away,.is-leaving) .close::before{animation-play-state:paused!important}
+.panel:is(.is-away,.is-leaving) .map-comet{display:none}
+.pr-list li,.faq-item{contain:layout paint}
+.statement{will-change:transform}
+.close{border-radius:48px}
+.stack.is-on .panel:has(> .panel-body > .journey){opacity:1!important}
+.journey::after{display:none}
+.journey{background:radial-gradient(1.5px 1.5px at 12% 22%,#fff,transparent),radial-gradient(1px 1px at 28% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 46% 14%,#FFE27A,transparent),radial-gradient(1px 1px at 64% 82%,#fff,transparent),radial-gradient(1.5px 1.5px at 78% 36%,#fff,transparent),radial-gradient(1px 1px at 90% 64%,#FFE27A,transparent),radial-gradient(1px 1px at 6% 88%,#fff,transparent),radial-gradient(700px 380px at 85% 0%,rgba(255,200,0,.2),transparent 60%),radial-gradient(900px 600px at 0% 100%,rgba(168,85,247,.38),transparent 60%),linear-gradient(160deg,#2B0B6E 0%,#14052F 100%)!important}
